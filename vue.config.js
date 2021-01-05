@@ -1,4 +1,4 @@
 module.exports = {
   publicPath: '/covid19japan-simple/',
-  outputDir: 'docs'
+  outputDir: '../covid19japan-simple-site/docs'
 };

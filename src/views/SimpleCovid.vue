@@ -45,6 +45,16 @@ export default {
         active: 'dailyActive',
         deceased: 'dailyDeceasedCount'
       },
+      avgKeyForMetric: {
+        active: 'activeCumulative',
+        critical: 'criticalCumulative'
+      },
+      diffMethod: {
+        confirmed: 'sumDiff',
+        deceased: 'sumDiff',
+        active: 'avgDiff',
+        critical: 'avgDiff'
+      },
       metrics: {
         japan: '',
         kanto: '',
@@ -109,16 +119,31 @@ export default {
       this.metrics.others = this.calculatePrefectureMetrics(isOthers);
     },
     calculateJapanWideMetrics() {
+      let diffMethod = this.diffMethod[this.metricKey];
       let periodLength = this.periodNames[this.periodSelected];
-      let thisPeriod = this.japan.slice(this.japan.length - periodLength);
-      let lastPeriod = this.japan.slice(
-        this.japan.length - periodLength * 2,
-        this.japan.length - periodLength
-      );
-      console.log(thisPeriod);
+      let thisPeriodSum = 1
+      let lastPeriodSum = 1
 
-      let thisPeriodSum = _.sumBy(thisPeriod, this.metricKey);
-      let lastPeriodSum = _.sumBy(lastPeriod, this.metricKey);
+      if (diffMethod == 'sumDiff') {
+        let thisPeriod = this.japan.slice(this.japan.length - periodLength);
+        let lastPeriod = this.japan.slice(
+          this.japan.length - periodLength * 2,
+          this.japan.length - periodLength
+        );
+        // console.log(thisPeriod)
+        // console.log(thisPeriod.map(o => o[this.metricKey]));
+        // console.log(lastPeriod.map(o => o[this.metricKey]));
+
+        thisPeriodSum = _.sumBy(thisPeriod, this.metricKey);
+        lastPeriodSum = _.sumBy(lastPeriod, this.metricKey);
+       
+      } else if (diffMethod == 'avgDiff') {
+        // This matters for Japan-wide data beacuse we're inconsistently naming day-to-day diffs
+        // so instead we use the cumulative number and compare them.
+        thisPeriodSum = this.japan[this.japan.length-1][this.avgKeyForMetric[this.metricKey]];
+        lastPeriodSum = this.japan[this.japan.length - periodLength - 1][this.avgKeyForMetric[this.metricKey]];
+      }
+
       let percentDiff = (((thisPeriodSum - lastPeriodSum) / lastPeriodSum) * 100).toFixed(1);
       if (percentDiff > 0) {
         return `+${percentDiff}%`;
