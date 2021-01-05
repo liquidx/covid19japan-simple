@@ -142,6 +142,8 @@ export default {
         // so instead we use the cumulative number and compare them.
         thisPeriodSum = this.japan[this.japan.length-1][this.avgKeyForMetric[this.metricKey]];
         lastPeriodSum = this.japan[this.japan.length - periodLength - 1][this.avgKeyForMetric[this.metricKey]];
+        // console.log(this.japan)
+        // console.log(thisPeriodSum, lastPeriodSum)
       }
 
       let percentDiff = (((thisPeriodSum - lastPeriodSum) / lastPeriodSum) * 100).toFixed(1);
