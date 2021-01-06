@@ -13,6 +13,8 @@
     <StatRow ref="tokyo" place="Tokyo" :metric="metrics.tokyo" />
     <StatRow ref="osaka" place="Osaka" :metric="metrics.osaka" />
     <StatRow ref="others" place="Others" :metric="metrics.others" />
+
+    <Description/>
   </div>
 </template>
 
@@ -20,6 +22,7 @@
 // @ is an alias to /src
 import StatRow from '@/components/StatRow.vue';
 import HeaderRow from '@/components/HeaderRow.vue';
+import Description from '@/components/Description.vue';
 
 import _ from 'lodash';
 
@@ -27,7 +30,8 @@ export default {
   name: 'SimpleCovid',
   components: {
     StatRow,
-    HeaderRow
+    HeaderRow,
+    Description
   },
   data() {
     return {
