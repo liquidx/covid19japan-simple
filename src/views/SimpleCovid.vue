@@ -6,7 +6,7 @@
       v-on:toggleMetric="toggleMetric"
       v-on:togglePeriod="togglePeriod"
       :title="humanReadableMetricKey"
-      :metric="periodSelected + ' %Δ'"
+      :metric="metricTitle"
     />
     <StatRow ref="japan" place="Japan" :metric="metrics.japan" />
     <StatRow ref="kanto" place="Kanto" :metric="metrics.kanto" />
@@ -37,6 +37,7 @@ export default {
     return {
       japan: [],
       prefectures: [],
+      showRelativeValue: true,
       periodSelected: 'Weekly',
       periodNames: {
         Weekly: 7,
@@ -89,6 +90,13 @@ export default {
           return 'New';
         default:
           return '';
+      }
+    },
+    metricTitle() {
+      if (this.showRelativeValue) {
+        return `${this.periodSelected} %Δ`
+      } else {
+        return 'Daily ' + this.periodNames[this.periodSelected] + 'd Avg'
       }
     }
   },
@@ -147,20 +155,26 @@ export default {
       } else if (diffMethod == 'avgDiff') {
         // This matters for Japan-wide data beacuse we're inconsistently naming day-to-day diffs
         // so instead we use the cumulative number and compare them.
-        thisPeriodSum = values[values.length - 2][this.avgKeyForMetric[this.metricKey]];
-        lastPeriodSum = values[values.length - periodLength - 2][this.avgKeyForMetric[this.metricKey]];
+        thisPeriodSum = values[values.length - 1][this.avgKeyForMetric[this.metricKey]];
+        lastPeriodSum = values[values.length - periodLength - 1][this.avgKeyForMetric[this.metricKey]];
         // console.log(this.japan)
         // console.log(thisPeriodSum, lastPeriodSum)
       }
 
-      let percentDiff = (((thisPeriodSum - lastPeriodSum) / lastPeriodSum) * 100).toFixed(1);
-      if (percentDiff > 0) {
-        return `+${percentDiff}%`;
+      if (this.showRelativeValue) {
+        let percentDiff = (((thisPeriodSum - lastPeriodSum) / lastPeriodSum) * 100).toFixed(1);
+        if (percentDiff > 0) {
+          return `+${percentDiff}%`;
+        } else {
+          return `${percentDiff}%`;
+        }
       } else {
-        return `${percentDiff}%`;
+        let val = Math.round(thisPeriodSum / periodLength)
+        return `${val}`
       }
     },
     calculatePrefectureMetrics(predicate) {
+      let diffMethod = this.diffMethod[this.metricKey];
       let prefectures = _.filter(this.prefectures, predicate);
       let periodLength = this.periodNames[this.periodSelected];
       let thisPeriodSum = 0;
@@ -180,20 +194,29 @@ export default {
         // Cut off most current day to avoid summing incomplete days.
         values = values.slice(0, values.length - 1)
 
-        let thisPeriod = values.slice(values.length - periodLength);
-        let lastPeriod = values.slice(
-          values.length - 2 * periodLength,
-          values.length - periodLength
-        );
-        thisPeriodSum += _.sum(thisPeriod);
-        lastPeriodSum += _.sum(lastPeriod);
+        if (diffMethod == 'sumDiff') {
+          let thisPeriod = values.slice(values.length - periodLength);
+          let lastPeriod = values.slice(
+            values.length - 2 * periodLength,
+            values.length - periodLength
+          );
+          thisPeriodSum += _.sum(thisPeriod);
+          lastPeriodSum += _.sum(lastPeriod);
+        } else {
+          thisPeriodSum += values[values.length - 1]
+          lastPeriodSum += values[values.length - periodLength - 1]
+        }
       }
-
-      let percentDiff = (((thisPeriodSum - lastPeriodSum) / lastPeriodSum) * 100).toFixed(1);
-      if (percentDiff > 0) {
-        return `+${percentDiff}%`;
+      if (this.showRelativeValue) {
+        let percentDiff = (((thisPeriodSum - lastPeriodSum) / lastPeriodSum) * 100).toFixed(1);
+        if (percentDiff > 0) {
+          return `+${percentDiff}%`;
+        } else {
+          return `${percentDiff}%`;
+        }
       } else {
-        return `${percentDiff}%`;
+        let val = Math.round(thisPeriodSum / periodLength)
+        return `${val}`
       }
     },
     toggleMetric() {
@@ -209,11 +232,21 @@ export default {
     togglePeriod() {
       switch (this.periodSelected) {
         case 'Weekly': {
-          this.periodSelected = 'Monthly';
+          if (this.showRelativeValue) {
+            this.showRelativeValue = !this.showRelativeValue
+          } else {
+            this.showRelativeValue = !this.showRelativeValue
+            this.periodSelected = 'Monthly';
+          }
           break;
         }
         case 'Monthly': {
-          this.periodSelected = 'Weekly';
+          if (this.showRelativeValue) {
+            this.showRelativeValue = !this.showRelativeValue
+          } else {
+            this.showRelativeValue = !this.showRelativeValue
+            this.periodSelected = 'Weekly';
+          }
           break;
         }
       }
