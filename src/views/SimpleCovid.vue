@@ -82,7 +82,7 @@ export default {
         case 'deceased':
           return 'Deaths';
         case 'confirmed':
-          return 'Confirmed';
+          return 'New';
         default:
           return '';
       }
@@ -124,11 +124,14 @@ export default {
       let thisPeriodSum = 1
       let lastPeriodSum = 1
 
+      // Cut off the most current day to prevent using incomplete data.
+      let values = this.japan.slice(0, this.japan.length - 1)
+
       if (diffMethod == 'sumDiff') {
-        let thisPeriod = this.japan.slice(this.japan.length - periodLength);
-        let lastPeriod = this.japan.slice(
-          this.japan.length - periodLength * 2,
-          this.japan.length - periodLength
+        let thisPeriod = values.slice(values.length - periodLength);
+        let lastPeriod = values.slice(
+          values.length - periodLength * 2,
+          values.length - periodLength
         );
         // console.log(thisPeriod)
         // console.log(thisPeriod.map(o => o[this.metricKey]));
@@ -140,8 +143,8 @@ export default {
       } else if (diffMethod == 'avgDiff') {
         // This matters for Japan-wide data beacuse we're inconsistently naming day-to-day diffs
         // so instead we use the cumulative number and compare them.
-        thisPeriodSum = this.japan[this.japan.length-1][this.avgKeyForMetric[this.metricKey]];
-        lastPeriodSum = this.japan[this.japan.length - periodLength - 1][this.avgKeyForMetric[this.metricKey]];
+        thisPeriodSum = values[values.length - 2][this.avgKeyForMetric[this.metricKey]];
+        lastPeriodSum = values[values.length - periodLength - 2][this.avgKeyForMetric[this.metricKey]];
         // console.log(this.japan)
         // console.log(thisPeriodSum, lastPeriodSum)
       }
@@ -169,6 +172,10 @@ export default {
         if (!values) {
           continue;
         }
+
+        // Cut off most current day to avoid summing incomplete days.
+        values = values.slice(0, values.length - 1)
+
         let thisPeriod = values.slice(values.length - periodLength);
         let lastPeriod = values.slice(
           values.length - 2 * periodLength,
