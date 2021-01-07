@@ -1,24 +1,12 @@
-# covid19japan-simple
+Simplification of covid19japan.com
 
-## Project setup
-```
-npm install
-```
+There are four main values:
 
-### Compiles and hot-reloads for development
-```
-npm run serve
-```
+ * New Cases (confirmed)
+ * New Deaths (deceased)
+ * Active Cases (patients that are still testing positive)
+ * Critical Cases (patients that are active AND in critical condition)
 
-### Compiles and minifies for production
-```
-npm run build
-```
+ The first two are differential values, the latter two are instaneous numbers.
 
-### Lints and fixes files
-```
-npm run lint
-```
-
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
+So they need to be displayed differently.
