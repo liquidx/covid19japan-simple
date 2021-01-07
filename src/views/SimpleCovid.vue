@@ -162,7 +162,7 @@ export default {
       }
 
       if (this.showRelativeValue) {
-        let percentDiff = (((thisPeriodSum - lastPeriodSum) / lastPeriodSum) * 100).toFixed(1);
+        let percentDiff = (((thisPeriodSum - lastPeriodSum) / lastPeriodSum) * 100).toFixed(0);
         if (percentDiff > 0) {
           return `+${percentDiff}%`;
         } else {
@@ -207,16 +207,20 @@ export default {
           lastPeriodSum += values[values.length - periodLength - 1]
         }
       }
+
       if (this.showRelativeValue) {
-        let percentDiff = (((thisPeriodSum - lastPeriodSum) / lastPeriodSum) * 100).toFixed(1);
+        let percentDiff = (((thisPeriodSum - lastPeriodSum) / lastPeriodSum) * 100).toFixed(0);
         if (percentDiff > 0) {
           return `+${percentDiff}%`;
         } else {
           return `${percentDiff}%`;
         }
       } else {
-        let val = Math.round(thisPeriodSum / periodLength)
-        return `${val}`
+        if (diffMethod == 'sumDiff') {
+          return Math.round(thisPeriodSum / periodLength)
+        } else {
+          return thisPeriodSum
+        }
       }
     },
     toggleMetric() {
