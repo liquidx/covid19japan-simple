@@ -110,12 +110,10 @@ export default {
         .then(results => {
           this.japan = results.daily;
           this.prefectures = results.prefectures;
-          console.log(this.prefectures);
         });
     },
     humanReadableValues(values) {
       let max = _.max(Object.values(values));
-      console.log(Object.values(values))
       let humanReadable = {};
 
       for (let k of Object.keys(values)) {
