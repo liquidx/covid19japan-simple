@@ -1,9 +1,8 @@
 <template>
   <div class="description">
     <p>
-      All you need to know is whether the number of cases are <b>increasing or decreasing compared to last week.</b>
-      This page tells you either on a weekly or monthly basis whether the number of new cases,
-      active cases, deaths or critical cases are going up or down.
+      For us to be safe, the new cases 14 day % delta must be below 0%.
+      For us to be safe, the currently positive 14 day % delta should be below 0%.
     </p>
   </div>
 </template>

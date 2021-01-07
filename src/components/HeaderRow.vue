@@ -35,11 +35,12 @@ export default {
   color: rgb(128, 128, 128);
 
   .title {
-    width: 50%;
+    width: 60%;
+    word-wrap: nowrap;
     cursor: pointer;
   }
   .metric {
-    width: 50%;
+    width: 40%;
     cursor: pointer;
     text-align: right;
   }

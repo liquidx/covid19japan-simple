@@ -14,7 +14,7 @@
     <StatRow ref="osaka" place="Osaka" :metric="metrics.osaka" />
     <StatRow ref="others" place="Others" :metric="metrics.others" />
 
-    <Description/>
+    <Description />
   </div>
 </template>
 
@@ -38,27 +38,37 @@ export default {
       japan: [],
       prefectures: [],
       showRelativeValue: true,
-      periodSelected: 'Weekly',
+      periodSelected: '14 day',
       periodNames: {
-        Weekly: 7,
-        Monthly: 30
+        '14 day': 14,
+        '30 day': 30
       },
-      metricKeys: ['confirmed', 'active', 'critical', 'deceased'],
       metricKey: 'confirmed',
-      prefectureMetricKeyName: {
-        confirmed: 'dailyConfirmedCount',
-        active: 'dailyActive',
-        deceased: 'dailyDeceasedCount'
-      },
-      avgKeyForMetric: {
-        active: 'activeCumulative',
-        critical: 'criticalCumulative'
-      },
-      diffMethod: {
-        confirmed: 'sumDiff',
-        deceased: 'sumDiff',
-        active: 'avgDiff',
-        critical: 'avgDiff'
+      metricKeys: ['confirmed', 'deceased', 'active', 'critical'],
+      metricProperties: {
+        confirmed: {
+          name: 'New Cases',
+          japanKey: 'confirmed',
+          prefectureKey: 'dailyConfirmedCount',
+          difference: true
+        },
+        deceased: {
+          name: 'Deaths',
+          japanKey: 'deceased',
+          prefectureKey: 'dailyDeceasedCount',
+          difference: true
+        },
+        active: {
+          name: 'Currently Positive',
+          japanKey: 'activeCumulative',
+          prefectureKey: 'dailyActive',
+          current: true
+        },
+        critical: {
+          name: 'Critical Condition',
+          japanKey: 'criticalCumulative',
+          current: true
+        }
       },
       metrics: {
         japan: '',
@@ -79,24 +89,17 @@ export default {
   },
   computed: {
     humanReadableMetricKey() {
-      switch (this.metricKey) {
-        case 'active':
-          return 'Active Cases';
-        case 'critical':
-          return 'Critical Cases';
-        case 'deceased':
-          return 'Deaths';
-        case 'confirmed':
-          return 'New';
-        default:
-          return '';
-      }
+      return this.metricProperties[this.metricKey].name;
     },
     metricTitle() {
       if (this.showRelativeValue) {
-        return `${this.periodSelected} %Δ`
+        return `${this.periodSelected} %Δ`;
       } else {
-        return 'Daily ' + this.periodNames[this.periodSelected] + 'd Avg'
+        if (this.metricProperties[this.metricKey].current) {
+          return 'Current';
+        } else {
+          return 'Daily ' + this.periodNames[this.periodSelected] + 'd Avg';
+        }
       }
     }
   },
@@ -110,6 +113,24 @@ export default {
           console.log(this.prefectures);
         });
     },
+    humanReadableValues(values) {
+      let max = _.max(Object.values(values));
+      console.log(Object.values(values))
+      let humanReadable = {};
+
+      for (let k of Object.keys(values)) {
+        let v = values[k];
+        if (max > 1000000) {
+          v = (v / 1000000).toFixed(1) + 'M';
+        } else if (max > 1000) {
+          v = (v / 1000).toFixed(1) + 'K';
+        } else {
+          v = v.toString();
+        }
+        humanReadable[k] = v;
+      }
+      return humanReadable;
+    },
     recalculateMetrics() {
       const isTokyo = p => {
         return p.name == 'Tokyo';
@@ -118,47 +139,45 @@ export default {
         return p.name == 'Osaka';
       };
       const isKanto = p => {
-        return ['Tokyo', 'Kanagawa', 'Chiba', 'Saitama'].indexOf(p.name) != -1
-      }
+        return ['Tokyo', 'Kanagawa', 'Chiba', 'Saitama'].indexOf(p.name) != -1;
+      };
       const isOthers = p => {
-        return ['Tokyo', 'Kanagawa', 'Chiba', 'Saitama', 'Osaka'].indexOf(p.name) == -1
-      }
+        return ['Tokyo', 'Kanagawa', 'Chiba', 'Saitama', 'Osaka'].indexOf(p.name) == -1;
+      };
 
       this.metrics.japan = this.calculateJapanWideMetrics();
-      this.metrics.kanto = this.calculatePrefectureMetrics(isTokyo);
-      this.metrics.tokyo = this.calculatePrefectureMetrics(isKanto);
+      this.metrics.kanto = this.calculatePrefectureMetrics(isKanto);
+      this.metrics.tokyo = this.calculatePrefectureMetrics(isTokyo);
       this.metrics.osaka = this.calculatePrefectureMetrics(isOsaka);
       this.metrics.others = this.calculatePrefectureMetrics(isOthers);
+      if (!this.showRelativeValue) {
+        this.metrics = this.humanReadableValues(this.metrics);
+      }
     },
     calculateJapanWideMetrics() {
-      let diffMethod = this.diffMethod[this.metricKey];
+      let metricProperty = this.metricProperties[this.metricKey];
+      let metricKey = metricProperty.japanKey;
       let periodLength = this.periodNames[this.periodSelected];
-      let thisPeriodSum = 1
-      let lastPeriodSum = 1
+      let thisPeriodSum = 1;
+      let lastPeriodSum = 1;
 
       // Cut off the most current day to prevent using incomplete data.
-      let values = this.japan.slice(0, this.japan.length - 1)
+      let values = this.japan.slice(0, this.japan.length - 1);
 
-      if (diffMethod == 'sumDiff') {
+      if (metricProperty.difference) {
         let thisPeriod = values.slice(values.length - periodLength);
         let lastPeriod = values.slice(
           values.length - periodLength * 2,
           values.length - periodLength
         );
-        // console.log(thisPeriod)
-        // console.log(thisPeriod.map(o => o[this.metricKey]));
-        // console.log(lastPeriod.map(o => o[this.metricKey]));
 
-        thisPeriodSum = _.sumBy(thisPeriod, this.metricKey);
-        lastPeriodSum = _.sumBy(lastPeriod, this.metricKey);
-       
-      } else if (diffMethod == 'avgDiff') {
-        // This matters for Japan-wide data beacuse we're inconsistently naming day-to-day diffs
-        // so instead we use the cumulative number and compare them.
-        thisPeriodSum = values[values.length - 1][this.avgKeyForMetric[this.metricKey]];
-        lastPeriodSum = values[values.length - periodLength - 1][this.avgKeyForMetric[this.metricKey]];
-        // console.log(this.japan)
-        // console.log(thisPeriodSum, lastPeriodSum)
+        thisPeriodSum = _.sumBy(thisPeriod, metricKey);
+        lastPeriodSum = _.sumBy(lastPeriod, metricKey);
+      } else if (metricProperty.current) {
+        // For metrics that are just reporting the current number (not increases)
+        // we simply compare the current value with a value $periodLength before.
+        thisPeriodSum = values[values.length - 1][metricKey];
+        lastPeriodSum = values[values.length - periodLength - 1][metricKey];
       }
 
       if (this.showRelativeValue) {
@@ -169,18 +188,21 @@ export default {
           return `${percentDiff}%`;
         }
       } else {
-        let val = Math.round(thisPeriodSum / periodLength)
-        return `${val}`
+        if (metricProperty.difference) {
+          return Math.round(thisPeriodSum / periodLength);
+        } else if (metricProperty.current) {
+          return thisPeriodSum;
+        }
       }
     },
     calculatePrefectureMetrics(predicate) {
-      let diffMethod = this.diffMethod[this.metricKey];
       let prefectures = _.filter(this.prefectures, predicate);
       let periodLength = this.periodNames[this.periodSelected];
       let thisPeriodSum = 0;
       let lastPeriodSum = 0;
 
-      let metricKey = this.prefectureMetricKeyName[this.metricKey];
+      let metricProperty = this.metricProperties[this.metricKey];
+      let metricKey = metricProperty.prefectureKey;
       if (!metricKey) {
         return '';
       }
@@ -192,9 +214,9 @@ export default {
         }
 
         // Cut off most current day to avoid summing incomplete days.
-        values = values.slice(0, values.length - 1)
+        values = values.slice(0, values.length - 1);
 
-        if (diffMethod == 'sumDiff') {
+        if (metricProperty.difference) {
           let thisPeriod = values.slice(values.length - periodLength);
           let lastPeriod = values.slice(
             values.length - 2 * periodLength,
@@ -202,9 +224,9 @@ export default {
           );
           thisPeriodSum += _.sum(thisPeriod);
           lastPeriodSum += _.sum(lastPeriod);
-        } else {
-          thisPeriodSum += values[values.length - 1]
-          lastPeriodSum += values[values.length - periodLength - 1]
+        } else if (metricProperty.current) {
+          thisPeriodSum += values[values.length - 1];
+          lastPeriodSum += values[values.length - periodLength - 1];
         }
       }
 
@@ -216,15 +238,16 @@ export default {
           return `${percentDiff}%`;
         }
       } else {
-        if (diffMethod == 'sumDiff') {
-          return Math.round(thisPeriodSum / periodLength)
+        if (metricProperty.difference) {
+          return Math.round(thisPeriodSum / periodLength);
+        } else if (metricProperty.current) {
+          return thisPeriodSum;
         } else {
-          return thisPeriodSum
+          return 'Err';
         }
       }
     },
     toggleMetric() {
-      console.log('toggleMetric');
       let currentIndex = this.metricKeys.indexOf(this.metricKey);
       let nextIndex = currentIndex + 1;
       if (nextIndex >= this.metricKeys.length) {
@@ -234,26 +257,17 @@ export default {
       this.recalculateMetrics();
     },
     togglePeriod() {
-      switch (this.periodSelected) {
-        case 'Weekly': {
-          if (this.showRelativeValue) {
-            this.showRelativeValue = !this.showRelativeValue
-          } else {
-            this.showRelativeValue = !this.showRelativeValue
-            this.periodSelected = 'Monthly';
-          }
-          break;
-        }
-        case 'Monthly': {
-          if (this.showRelativeValue) {
-            this.showRelativeValue = !this.showRelativeValue
-          } else {
-            this.showRelativeValue = !this.showRelativeValue
-            this.periodSelected = 'Weekly';
-          }
-          break;
-        }
-      }
+      const toggles = [
+        '14 day true',
+        '14 day false',
+        '30 day true',
+        '30 day false'
+      ]
+      let currentIndex = toggles.indexOf(`${this.periodSelected} ${this.showRelativeValue}`)
+      let next = toggles[(currentIndex + 1) % toggles.length]
+
+      this.showRelativeValue = next.endsWith('true');
+      this.periodSelected = next.replace(' true', '').replace(' false', '')
       this.recalculateMetrics();
     }
   }
