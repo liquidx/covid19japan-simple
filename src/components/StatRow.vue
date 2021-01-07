@@ -31,6 +31,7 @@ export default {
   }
   .metric {
     width: 50%;
+    text-align: right;
   }
 }
 </style>

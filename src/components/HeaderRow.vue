@@ -41,6 +41,7 @@ export default {
   .metric {
     width: 50%;
     cursor: pointer;
+    text-align: right;
   }
 }
 </style>
