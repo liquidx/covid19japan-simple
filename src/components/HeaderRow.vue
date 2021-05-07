@@ -1,7 +1,7 @@
 <template>
   <div class="header">
     <div v-on:click="titleDidClick" class="title">{{title}} <img src="disclosure.png" width="20" height="20"></div>
-    <div v-on:click="metricDidClick" class="metric">{{metric}}</div>
+    <div v-on:click="metricDidClick" class="metric">{{metric}} <img src="disclosure.png" width="20" height="20"></div>
   </div>
 </template>
 
